@@ -22,3 +22,7 @@ In order to install this, perform the following steps:
 16 Enter the incrontab editor (incrontab -e) and add "/db/facerec.db IN_MODIFY /usr/bin/startservices.sh restart"
 
 To manually start/stop/restart the services, simply type "startservices.sh start"
+
+That should get the services running, but to actually demonstrate the application, you will need to use another client to access the web app. Currently, this has been tested with Chrome browsers on Mac OS and Linux. For phones, we have had mixed success with Chrome on Android, and Firefox on Android seems to work well too. Opera on Android should also work. Unfortunately, anything with iOS does not work with the camera, which is a real bummer. 
+
+From the list above, point your browser to https:[url to your device]:8080/app. Then smile and snap a pic. If you get matched to me, I apologize. 
