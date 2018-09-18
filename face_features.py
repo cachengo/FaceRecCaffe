@@ -1,4 +1,5 @@
 import math
+import os
 
 import caffe
 import cv2
@@ -7,9 +8,11 @@ import numpy as np
 
 from mtcnn import MTCNN
 
-GPU_ID = 0
-caffe.set_mode_gpu()
-caffe.set_device(GPU_ID)
+GPU_ID = os.environ.get('GPU_ID')
+if GPU_ID:
+    caffe.set_mode_gpu()
+    caffe.set_device(GPU_ID)
+
 
 def find_new_locations(points, angle, center, adj, M):
     M_inv = cv2.getRotationMatrix2D(center, angle, 1.0)
@@ -20,35 +23,37 @@ def find_new_locations(points, angle, center, adj, M):
     new_points = M_inv.dot(points_ones.T).T
     return new_points
 
+
 def guard(x, N):
-    x[x<0] = 0
-    x[:2][x[:2]>N[1]-1] = N[1]-1
-    x[2:][x[2:]>N[0]-1] = N[0]-1
+    x[x < 0] = 0
+    x[:2][x[:2] > N[1]-1] = N[1]-1
+    x[2:][x[2:] > N[0]-1] = N[0]-1
     x = x.astype(int)
     return x
+
 
 def imrotate(image, angle, points=None):
     # grab the dimensions of the image and then determine the
     # center
     (h, w) = image.shape[:2]
     (cX, cY) = (w // 2, h // 2)
- 
+
     # grab the rotation matrix (applying the negative of the
     # angle to rotate clockwise), then grab the sine and cosine
     # (i.e., the rotation components of the matrix)
     M = cv2.getRotationMatrix2D((cX, cY), -angle, 1.0)
     cos = np.abs(M[0, 0])
     sin = np.abs(M[0, 1])
- 
+
     # compute the new bounding dimensions of the image
     nW = int((h * sin) + (w * cos))
     nH = int((h * cos) + (w * sin))
- 
+
     # adjust the rotation matrix to take into account translation
     adjustment = ((nW / 2) - cX, (nH / 2) - cY)
     M[0, 2] += adjustment[0]
     M[1, 2] += adjustment[1]
-    
+
     new_points = find_new_locations(points, angle, (cX, cY), adjustment, M) if points is not None else None
     # perform the actual rotation and return the image
     return cv2.warpAffine(image, M, (nW, nH)), new_points
@@ -61,8 +66,8 @@ def align(img, f5pt, crop_size=144, ec_mc_y=48, ec_y=48):
     eyec = (f5pt_rot[0, :] + f5pt_rot[1, :])/2
     mouthc = (f5pt_rot[3, :] + f5pt_rot[4, :])/2
     resize_scale = ec_mc_y/(mouthc[0]-eyec[0])
-    img_resize = cv2.resize(img_rot, (0,0), None, fx=resize_scale, fy=resize_scale)
-    
+    img_resize = cv2.resize(img_rot, (0, 0), None, fx=resize_scale, fy=resize_scale)
+
     res = img_resize
     rot_shape = np.array(img_rot.shape)[:-1]
     res_shape = np.array(img_resize.shape)[:-1]
@@ -74,10 +79,9 @@ def align(img, f5pt, crop_size=144, ec_mc_y=48, ec_y=48):
     crop_x = int(eyec2[1]-math.floor(crop_size/2))
     crop_x_end = int(crop_x + crop_size - 1)
     box = guard(np.array([crop_x, crop_x_end, crop_y, crop_y_end]), img_resize.shape)
-    img_crop[box[2]-crop_y+1:box[3]-crop_y+1, box[0]-crop_x+1:box[1]-crop_x+1,:] = img_resize[box[2]:box[3],box[0]:box[1],:]
+    img_crop[box[2]-crop_y+1:box[3]-crop_y+1, box[0]-crop_x+1:box[1]-crop_x+1, :] = img_resize[box[2]:box[3],box[0]:box[1],:]
     cropped = img_crop/255
     return res, eyec2, cropped, resize_scale
-
 
 
 class FaceFeatureExtractor():
@@ -93,7 +97,7 @@ class FaceFeatureExtractor():
         t2 = time.time()
         self.net.blobs['data'].data[...] = cv2.resize(im_gray, (128, 128))
         result = self.net.forward()
-        result = result[result.keys()[0]]
+        result = result[list(result)[0]]
         t3 = time.time()
 
         times.update({'features': t3 - t2})
@@ -107,6 +111,7 @@ class FaceFeatureExtractor():
         t2 = time.time()
         times = {'detection': t1 - t0, 'alignment': t2 - t1}
         return img_aligned, times
+
 
 if __name__ == '__main__':
     feature_extractor = FaceFeatureExtractor()

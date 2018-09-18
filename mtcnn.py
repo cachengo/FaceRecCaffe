@@ -1,4 +1,4 @@
-'''Code to detect faces and facial landmarks using MTCNN. This code is a copy of 
+'''Code to detect faces and facial landmarks using MTCNN. This code is a copy of
    https://github.com/kuangliu/pycaffe-mtcnn with small adaptations.'''
 
 import math
@@ -316,7 +316,7 @@ def detect_face(im, PNet, RNet, ONet):
     # First stage.
     #
     total_boxes = []  # Bounding boxes of all scales.
-    print(scales)
+
     for scale in scales:
         hs = int(math.ceil(image_height*scale))
         ws = int(math.ceil(image_width*scale))
@@ -416,7 +416,7 @@ class MTCNN():
         if bboxes.shape[0] == 0:
             return
         draw_and_show(im, bboxes, points)
-    
+
 
 if __name__ == '__main__':
   mtcnn = MTCNN()
