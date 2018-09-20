@@ -1,10 +1,11 @@
-export IMAGE_TAG=$(cat VERSION)
-export AARCH=`uname -m`
+IMAGE_TAG=$(cat VERSION)
+AARCH=`uname -m`
 
+CAFFE_TAG=cpu
 if [ "$AARCH" = "aarch64" ]; then
-    docker build -t cachengo/facerec-$AARCH:$IMAGE_TAG --build-arg base_image=cachengo/caffe-hrt:latest .;
-else
-    docker build -t cachengo/facerec-$AARCH:$IMAGE_TAG .;
-fi;
+    CAFFE_TAG=acl;
+fi
+
+docker build -t cachengo/facerec-$AARCH:$IMAGE_TAG --build-arg caffe_tag=$CAFFE_TAG .
 
 docker push cachengo/facerec-$AARCH:$IMAGE_TAG
